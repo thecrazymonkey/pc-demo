@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "javaTypeName": "io.confluent.developer.Recordnew",
+  "properties": {
+    "transaction": {
+      "type": "string",
+      "not": {"type":  "null"}
+    },
+    "source": {
+      "type": "string",
+      "not": {"type":  "null"}
+    },
+    "target": {
+      "type": "string",
+      "not": {"type":  "null"}
+    }
+  },
+  "required": [
+    "transaction",
+    "source",
+    "target"
+  ]
+}

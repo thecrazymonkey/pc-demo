@@ -1,0 +1,121 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url = uri("https://packages.confluent.io/maven/")
+        }
+        maven {
+            url = uri("https://plugins.gradle.org/m2/")
+        }
+        maven {
+            url = uri("https://jitpack.io")
+        }
+    }
+    dependencies {
+        classpath "com.github.jengelman.gradle.plugins:shadow:6.1.0"
+    }
+}
+
+plugins {
+    id "java"
+    id("io.freefair.lombok") version "8.4"
+//    id "org.jsonschema2dataclass" version "6.0.0"
+    id "com.github.imflog.kafka-schema-registry-gradle-plugin" version "2.1.0"
+    id "org.jsonschema2pojo" version "1.2.1"
+}
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+version = "0.0.1"
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url = uri("https://packages.confluent.io/maven/")
+    }
+
+    maven {
+        url = uri("https://jitpack.io")
+    }
+}
+
+jsonSchema2Pojo {
+            targetPackage = 'io.confluent.developer'
+            generateBuilders = true
+            annotationStyle = "JACKSON2"
+            source = files("${project.projectDir}/src/main/resources/json")
+            includeJsr303Annotations = false
+            propertyWordDelimiters = ['_'] as char[]
+}
+
+apply plugin: "com.github.johnrengelman.shadow"
+
+dependencies {
+    implementation "io.confluent.parallelconsumer:parallel-consumer-core:0.5.2.8"
+    implementation "org.slf4j:slf4j-simple:2.0.0"
+    implementation 'io.micrometer:micrometer-registry-prometheus:latest.release'
+    implementation 'io.micrometer:micrometer-registry-jmx:latest.release'
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation 'javax.validation:validation-api:2.0.1.Final'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+    implementation "io.confluent:kafka-json-schema-serializer:7.6.0"
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "io.confluent.parallelconsumer:parallel-consumer-core:0.5.2.8:tests" // for LongPollingMockConsumer
+}
+
+test {
+    testLogging {
+        outputs.upToDateWhen { false }
+        showStandardStreams = true
+        exceptionFormat = "full"
+    }
+}
+
+jar {
+  manifest {
+    attributes(
+      "Class-Path": configurations.compileClasspath.collect { it.getName() }.join(" "),
+    )
+  }
+}
+
+shadowJar {
+    archiveBaseName = "confluent-parallel-consumer-application-standalone"
+}
+
+schemaRegistry {
+    def props = new Properties()
+    file("src/main/resources/config.properties").withInputStream {props.load(it)}
+    def srUrl = props.getProperty("schema.registry.url")
+//    def auth =  props.getProperty("basic.auth.user.info").split(":")
+//    println "Using Schema Registry endpoint:${srUrl}, username:${auth[0]},password:${auth[1]}"
+    println "Using Schema Registry endpoint:${srUrl}"
+
+    url = srUrl
+
+    credentials {
+//        // username is the characters up to the ':' in the basic.auth.user.info property
+//        username = auth[0]
+//        // password is everything after ':' in the basic.auth.user.info property
+//        password = auth[1]
+    }
+
+
+    // Possible types are ["JSON", "PROTOBUF", "AVRO"]
+    register {
+        subject('record-value', 'src/main/resources/json/record.json', 'JSON')
+        subject('record1-value', 'src/main/resources/json/record.json', 'JSON')
+        subject('recorddifferent-value', 'src/main/resources/json/recorddifferent.json', 'JSON')
+        subject('composite-value', 'src/main/resources/json/composite.json', 'JSON')
+                .addReference("record.json", "record-value", 1)
+                .addReference("recorddifferent.json", "recorddifferent-value", 1)
+        subject('recordnew-value', 'src/main/resources/json/recordnew.json', 'JSON')
+//        subject('recordtest', 'src/main/resources/json/recordnew_test.json', 'JSON')
+        subject('recordtest-value', 'src/main/resources/json/recordnew_test.json', 'JSON')
+    }
+    compatibility {
+        subject('recordtest', 'src/main/resources/json/recordnew_test.json', 'JSON')
+    }
+
+}
