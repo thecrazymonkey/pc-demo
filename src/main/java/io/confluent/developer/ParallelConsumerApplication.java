@@ -9,12 +9,9 @@ import io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializerConfig;
 import io.confluent.parallelconsumer.PCRetriableException;
 import io.confluent.parallelconsumer.ParallelConsumerOptions;
 import io.confluent.parallelconsumer.ParallelStreamProcessor;
-import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics;
-import io.micrometer.jmx.JmxConfig;
-import io.micrometer.jmx.JmxMeterRegistry;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import lombok.Value;
@@ -151,7 +148,7 @@ public class ParallelConsumerApplication {
    */
   public void runConsume(final Properties appProperties) {
     String topic = appProperties.getProperty("input.topic.name");
-    String outputTopic = appProperties.getProperty("output.topic.name");
+    // String outputTopic = appProperties.getProperty("output.topic.name");
 
     LOGGER.info("Subscribing Parallel Consumer to consume from {} topic", topic);
     parallelConsumer.subscribe(Collections.singletonList(topic));
